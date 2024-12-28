@@ -1,0 +1,75 @@
+#Figure. 4E
+#using DEGs selected in Figure. 2A
+f<-read.csv("means.csv",header = T,row.names = 1)
+rag<-cbind(f[,1],f[,4:5])
+organ<-f[,2:3]
+g<-cbind(rag,organ)
+g<-g[rownames(deg),]
+
+
+#calculating Z-score
+g<-as.matrix(g)
+for (i in 1:650) {
+  g[i,]<-as.numeric(g[i,])
+  g[i,]<-(g[i,]-mean(g[i,]))/sd(g[i,])
+}
+colnames(deg)<-c(“WT”, “Rag-KO + control”, “Rag-KO + anti-CD3”, ”WT Spleen", "WT Lung")
+
+#drawing heatmap
+library(reshape2)
+library(ggplot2)
+library(ggthemes)
+library(scales)
+df<-melt(deg)
+colnames(df)<-c("gene","celltype","Zscore")
+ggplot(df,aes(as.factor(celltype),as.factor(gene)))+
+  geom_tile(aes(fill=Zscore))+scale_fill_gradientn(colours = rev(brewer.pal(9,"Spectral")))+
+  theme(plot.background=element_blank(), panel.grid.minor=element_blank(),
+        panel.background=element_blank(), axis.line=element_blank(), 
+        axis.title.x=element_blank(), axis.title.y=element_blank(), strip.background=element_rect(fill="white",colour="white"),
+        axis.ticks = element_blank(), axis.text.y = element_blank(),
+        text = element_text(size = 24), legend.key.size = unit(5,"mm"),
+        legend.title = element_text(size = 14), axis.text.x = element_text(angle = 90,hjust = 1),
+        legend.text = element_text(size = 10))+
+  scale_x_discrete(position = "top")
+
+
+#Figure. 4F
+#selecting genes downregulated in Rag-KO but rescued by anti-CD3 treatment
+colnames(rag)<-c(“WT","Rag-KO + control","Rag-KO + anti-CD3")
+g<-rag[1,]
+for (i in 1:41743) {
+  if(max(rag[I,])>1){
+    if((rag[i,1]>2*rag[i,2])&&(rag[i,3]>2*rag[i,2])&&(rag[i,1]<2*rag[i,3])){
+      g<-rbind(g,rag[i,])
+    }
+  }
+}
+g[1,]<-NA
+g<-na.omit(g)
+g[,4]<-g[,2]/g[,1]
+colnames(g)<-c("WT","Rag-KO + control","Rag-KO + anti-CD3","FC")
+g<-g[order(g$FC),]
+g<-g[g$WT>100,]
+
+#selecting top 10 genes & calculating Z-score
+top10<-g[1:10,]
+top10<-as.matrix(top10)
+for (i in 1:10) {
+  top10[i,]<-as.numeric(top10[i,])
+  top10[i,]<-(top10[i,]-mean(top10[i,]))/sd(top10[i,])
+}
+
+#drawing heatmap
+df<-melt(top10)
+colnames(df)<-c("gene","celltype","Zscore")
+ggplot(df,aes(as.factor(gene),as.factor(celltype)))+
+  geom_tile(aes(fill=Zscore))+scale_fill_gradientn(colours = rev(brewer.pal(9,"Spectral")))+
+  theme(plot.background=element_blank(), panel.grid.minor=element_blank(),
+        panel.background=element_blank(), axis.line=element_blank(),
+        axis.title.x=element_blank(), 
+        axis.text.x = element_text(angle = 90,hjust = 1),
+        strip.background=element_rect(fill="white",colour="white"),
+        axis.ticks = element_blank(), text = element_text(size = 24),
+        legend.key.size = unit(5,"mm"), legend.title = element_text(size = 14),
+        legend.text = element_text(size = 10))
